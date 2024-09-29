@@ -57,6 +57,7 @@ def detect_and_recognize_face(image, model=None, show_boxes=True):
     return image
 
 # Thiết lập tiêu đề ứng dụng
+st.title("Ứng dụng Phát hiện Khuôn mặt")
 
 # Define sections for the sidebar
 sections = {
@@ -150,10 +151,7 @@ elif selected_sub_section == "Phát hiện khuôn mặt ở hình ảnh":
         show_boxes = st.checkbox('Hiển thị viền quanh khuôn mặt', value=True)
 
         # Detect and recognize face in the uploaded image
-        if 'knn' in st.session_state:
-            processed_image = detect_and_recognize_face(image, st.session_state.knn, show_boxes)
-        else:
-            processed_image = detect_and_recognize_face(image, show_boxes=show_boxes)
+        processed_image = detect_and_recognize_face(image, st.session_state.knn if 'knn' in st.session_state else None, show_boxes)
 
         # Convert BGR to RGB for display in Streamlit
         processed_image = cv2.cvtColor(processed_image, cv2.COLOR_BGR2RGB)
@@ -170,26 +168,22 @@ elif selected_sub_section == "Phát hiện khuôn mặt ở video":
         stframe = st.empty()  # Khung để hiển thị luồng video
 
         stop_webcam = False
-        stop_button = st.button('Dừng webcam')
 
         while not stop_webcam and cap.isOpened():
             ret, frame = cap.read()  # Đọc khung hình từ webcam
             if ret:
                 # Phát hiện và nhận diện khuôn mặt trong từng khung hình
-                if 'knn' in st.session_state:
-                    processed_frame = detect_and_recognize_face(frame, st.session_state.knn)
-                else:
-                    processed_frame = detect_and_recognize_face(frame)
+                processed_frame = detect_and_recognize_face(frame, st.session_state.knn if 'knn' in st.session_state else None)
 
                 # Chuyển đổi BGR sang RGB để hiển thị trên Streamlit
                 processed_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
-                
+
                 # Hiển thị khung hình đã xử lý
                 stframe.image(processed_frame, channels="RGB", use_column_width=True)
 
-                # Kiểm tra nếu người dùng nhấn nút "Dừng webcam"
-                if stop_button:
-                    stop_webcam = True
+                # Thêm nút để dừng webcam
+                stop_webcam = st.button('Dừng webcam')
+                if stop_webcam:
+                    break
 
         cap.release()  # Giải phóng webcam sau khi dừng
-        cv2.destroyAllWindows()  # Đóng tất cả các cửa sổ OpenCV nếu có
