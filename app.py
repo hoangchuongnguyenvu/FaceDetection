@@ -4,7 +4,6 @@ import numpy as np
 import streamlit as st
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import train_test_split
-import time
 
 # Hàm để tải và xử lý ảnh
 def load_data(face_files, non_face_files):
@@ -29,13 +28,10 @@ def load_data(face_files, non_face_files):
 
 # Hàm để dự đoán
 def predict_image(image, model):
-    # Chuyển đổi ảnh thành ảnh đơn sắc nếu nó có nhiều kênh
     if len(image.shape) == 3:
         image = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
-
-    # Đảm bảo ảnh có kích thước 24x24 và chuyển đổi thành mảng phẳng
-    image = cv2.resize(image, (24, 24))  # Thay đổi kích thước ảnh
-    image = image.flatten().reshape(1, -1)  # Chuyển đổi thành mảng phẳng
+    image = cv2.resize(image, (24, 24))
+    image = image.flatten().reshape(1, -1)
     prediction = model.predict(image)
     return prediction[0]
 
@@ -49,7 +45,6 @@ def detect_and_recognize_face(image, model=None, show_boxes=True):
         face_roi = gray[y:y+h, x:x+w]
         face_resized = cv2.resize(face_roi, (24, 24)).flatten().reshape(1, -1)
         
-        # Nếu có mô hình, thực hiện nhận diện
         if model is not None:
             label = model.predict(face_resized)
         else:
@@ -171,28 +166,30 @@ elif selected_sub_section == "Phát hiện khuôn mặt ở video":
     start_webcam = st.button('Bắt đầu webcam')
     
     if start_webcam:
-        cap = cv2.VideoCapture(0)
-        stframe = st.empty()
+        cap = cv2.VideoCapture(0)  # Mở webcam (ID 0 là webcam mặc định)
+        stframe = st.empty()  # Khung để hiển thị luồng video
 
-        stop_webcam = st.button('Dừng webcam')
+        stop_webcam = False
+        stop_button = st.button('Dừng webcam')
 
-        while cap.isOpened():
-            ret, frame = cap.read()
+        while not stop_webcam and cap.isOpened():
+            ret, frame = cap.read()  # Đọc khung hình từ webcam
             if ret:
-                # Detect and recognize faces in the frame
+                # Phát hiện và nhận diện khuôn mặt trong từng khung hình
                 if 'knn' in st.session_state:
                     processed_frame = detect_and_recognize_face(frame, st.session_state.knn)
                 else:
                     processed_frame = detect_and_recognize_face(frame)
 
-                # Convert BGR to RGB for display in Streamlit
+                # Chuyển đổi BGR sang RGB để hiển thị trên Streamlit
                 processed_frame = cv2.cvtColor(processed_frame, cv2.COLOR_BGR2RGB)
                 
-                # Display frame in the app
+                # Hiển thị khung hình đã xử lý
                 stframe.image(processed_frame, channels="RGB", use_column_width=True)
 
-                if stop_webcam:
-                    break
+                # Kiểm tra nếu người dùng nhấn nút "Dừng webcam"
+                if stop_button:
+                    stop_webcam = True
 
-        cap.release()
-        cv2.destroyAllWindows()
+        cap.release()  # Giải phóng webcam sau khi dừng
+        cv2.destroyAllWindows()  # Đóng tất cả các cửa sổ OpenCV nếu có
